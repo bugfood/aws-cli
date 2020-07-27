@@ -268,15 +268,15 @@ class FileGenerator(object):
         file generation process.  This includes symlinks that are not to be
         followed and files that generate warnings.
         """
+        if self.file_filter is not None:
+            # We received a file_filter. Let's see if the path matches:
+            if not list(self.file_filter.call([FileInfo(path)])):
+                return True
         if not self.follow_symlinks:
             if os.path.isdir(path) and path.endswith(os.sep):
                 # Trailing slash must be removed to check if it is a symlink.
                 path = path[:-1]
             if os.path.islink(path):
-                return True
-        if self.file_filter is not None:
-            # We received a file_filter. Let's see if the path matches:
-            if not list(self.file_filter.call([FileInfo(path)])):
                 return True
         warning_triggered = self.triggers_warning(path)
         if warning_triggered:
