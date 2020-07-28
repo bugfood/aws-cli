@@ -25,6 +25,7 @@ import mock
 
 from awscli.customizations.s3.filegenerator import FileGenerator, \
     FileDecodingError, FileStat, is_special_file, is_readable
+from awscli.customizations.s3.filters import Filter
 from awscli.customizations.s3.utils import get_file_stat, EPOCH_TIME
 from tests.unit.customizations.s3 import make_loc_files, clean_loc_files, \
     compare_files
@@ -174,6 +175,19 @@ class TestIgnoreFilesLocally(unittest.TestCase):
         os.symlink('non-existent-file', path)
         filegenerator = FileGenerator(self.client, '', True)
         self.assertTrue(filegenerator.should_ignore_file(path))
+
+    def test_skip_filtered(self):
+        path1 = self.files.create_file('foo.txt', contents='foo.txt contents')
+        path2 = self.files.create_file('foo.bar', contents='foo.bar contents')
+        file_filter = Filter(
+            [['exclude', '*.txt']],
+            self.files.rootdir,
+            'x/y', # value here does not matter
+        )
+        filegenerator = FileGenerator(self.client, '', False, file_filter=file_filter)
+        self.assertTrue(filegenerator.should_ignore_file(path1))
+        # Make sure the presence of a filter doesn't exclude everything!
+        self.assertFalse(filegenerator.should_ignore_file(path2))
 
     def test_skip_symlink(self):
         filename = 'foo.txt'
